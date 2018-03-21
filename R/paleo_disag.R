@@ -10,6 +10,10 @@
 #'   temporaly disaggregating paleo data based on the index year.
 #' @param nsite The number of sites to diaggregate the data too. 
 #' @param nsim Number of times to repeat the space/time disaggregation.
+#' @param ofolder Optional. If specified, the disaggregated flow data and the 
+#'   selected index years are saved to this folder as csv files.
+#' @param index_years Optional. If specified, these index years will be used 
+#'   instead of selecting years based on weights and sampling. 
 #' 
 #' @author Ken Nowak
 #' 
@@ -22,19 +26,26 @@
 #' # read in annual synthetic mon_flw for disag
 #' x <- matrix(scan("data-raw/Meko.txt"), ncol = 2, byrow = TRUE) 
 #' # intervening natural flow mon_flw - monthly CY text file
-#' mon_flw <- matrix(
-#'   scan("data-raw/CRB_CY_MON_IV_29_06_08.txt"), 
-#'   ncol = 29, 
-#'   byrow = TRUE
-#' )
+#' mon_flw <- as.matrix(read.table(
+#'   "tests/dp/NFfullbasinWY0608intervening.txt", 
+#'   sep = "\t"
+#' ))
 #' 
 #' # observed annual flow for picking analog disag yr
-#' ann_flw <- matrix(scan("data-raw/LF_06_08.txt"), ncol = 2, byrow = TRUE)
+#' ann_flw <- as.matrix(read.table("tests/dp/LFWYTotal.txt"))
 #' zz <- paleo_disagg(x, ann_flw, mon_flw, 29, 1)
+#' 
+#' index_yrs <- matrix(scan("tests/dp/indexpick.txt"), ncol = 1)
 #' }
 #' 
 #' @export
-paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
+paleo_disagg <- function(x, 
+                         ann_flw, 
+                         mon_flw, 
+                         nsite, 
+                         nsim, 
+                         ofolder = NULL, 
+                         index_years = NULL)
 {
   n_paleo_yrs <- nrow(x) # 1244 for meko; length of each simulation (yrs)
   
@@ -42,10 +53,28 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   n_obs_yrs <- nrow(mon_flw)/12 
   
   if (n_obs_yrs != nrow(ann_flw))
-    stop("`ann_flw` and `mon_pttrn` must have the same number of years.")
+    stop(
+      "`ann_flw` and `mon_pttrn` must have the same number of years.", 
+      call. = FALSE
+    )
   
   if (nsite != ncol(mon_flw))
-    stop("`mon_flow` needs to have `nsite` columns.")
+    stop("`mon_flow` needs to have `nsite` columns.", call. = FALSE)
+  
+  if (!is.null(index_years)) {
+    if (ncol(index_years) != nsim) 
+      stop(
+        "`index_years` must be specified for all simulations.\n",
+        " So, `nsim` must equal the number of columns in `index_years`.",
+        call. = FALSE
+      )
+    
+    if (nrow(index_years) != n_paleo_yrs)
+      stop(
+        "`index_years` must be specified for every year in the paleo record.",
+        call. = FALSE
+      )
+  }
   
   # matrix for observed values - row(yr), col (month), index (site)
   dat_a <- array(data = NA, dim=c(n_obs_yrs, 12, nsite)) 
@@ -69,7 +98,7 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
 
   	for(i in 1:n_obs_yrs){
   
-  	  dat_a[i,,j] <- mon_flw[s:e,j]
+  	  dat_a[i, , j] <- mon_flw[s:e, j]
   
   	  s <- s + 12
   	  e <- e + 12
@@ -103,11 +132,11 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   	# ranks distances for purpose of generating weights	
   	rnk <- rank(kmatrix[, 2]) 
   		
-  		for(i in 1:k){
-  		  # fills weighting matrix
-  			weight[i, 1] <- 1/(rnk[i]) 
-  	
-  		}
+		for(i in 1:k){
+		  # fills weighting matrix
+			weight[i, 1] <- 1/(rnk[i]) 
+	
+		}
   
   	z <- sum(weight) # sums weights 
   
@@ -115,7 +144,11 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   	weights <- weight/z	
   	
   	# Selects a year to be "nearest neighbor"
-  	N <- sample(kmatrix[, 1], 1, replace = TRUE, prob=weights) 
+  	if (is.null(index_years)) {
+  	  N <- sample(kmatrix[, 1], 1, replace = TRUE, prob=weights) 
+  	} else {
+  	  N <- index_years[1, j]
+  	}
   
   	# index for selected yr
   	pos <- N - (ann_flw[1, 1] - 1) 
@@ -166,7 +199,12 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   		weights <- weight/z	
   		
   		# Selects a year to be "nearest neighbor"
-  		N <- sample(kmatrix[, 1], 1, replace = TRUE, prob = weights) 
+  		if (is.null(index_years)) {
+  		  N <- sample(kmatrix[, 1], 1, replace = TRUE, prob = weights) 
+  		} else {
+  		  N <- index_years[h, j]
+  		}
+  		
   		pos <- N - (ann_flw[1, 1] - 1) # index for selected yr
   		SF <- Flow/(ann_flw[pos, 2]) # scaling factor to apply for disag
       
@@ -197,5 +235,5 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
     write.csv(index_mat, file = file.path(ofolder, "index_years.csv"))
   }
 
-  invisible(list(paleo_disagg = disag_out, index_yrs = index_mat))
+  invisible(list(paleo_disagg = disag_out, index_years = index_mat))
 }
