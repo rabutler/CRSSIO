@@ -11,6 +11,12 @@
 #' @param nsite The number of sites to diaggregate the data too. 
 #' @param nsim Number of times to repeat the space/time disaggregation.
 #' 
+#' @author Ken Nowak
+#' 
+#' @references Nowak, Kenneth, James Prairie, Balaji Rajagopalan, Upmanu Lall.
+#'   (2010) *A nonparametric stochastic approach for multisite disaggregation of
+#'   annual to daily streamflow.* Water Resources Research.
+#' 
 #' @examples 
 #' \dontrun{
 #' # read in annual synthetic mon_flw for disag
