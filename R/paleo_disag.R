@@ -167,7 +167,6 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   		index_mat[h, j] <- N
   		sf_mat[h, j] <- SF
   		
-  		#disag[h, , ,j]=dat_a[pos, ,]*SF
       disag[h, , 1:20, j] <- dat_a[pos, , 1:20]*SF
   		disag[h, , 21:29, j] <- dat_a[pos, , 21:29]
   	}
@@ -175,25 +174,12 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   			
   # output to "flat" file
   
-  #disagmat=matrix(ncol=nsite, nrow=(n_paleo_yrs*12*nsim))
-  
   disag_out <- lapply(seq_len(nsim), function(ii) {
     do.call(
       cbind, 
       lapply(seq_len(nsite), function(jj) as.vector(t(disag[,,jj,ii])))
     )
   })
-  
-  # for(i in 1:nsite){
-  #   p <- 1
-  # 
-  #   for(k in 1:nsim){
-  #     for(j in 1:n_paleo_yrs){
-  #       disagmat[p:(p+11),i] <- disag[j,,i,k]
-  #       p <- p + 12
-  #     }
-  #   }
-  # }
   
   if (!is.null(ofolder)) {
     lapply(seq_len(nsim), function(ii) 
