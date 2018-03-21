@@ -78,28 +78,28 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
     #this picks the 1st year for disag based only on the annual flow
   	k <- sqrt(n_obs_yrs) #number of neighbors
   	
-  	Flow <- x[1,(j+1)]
+  	Flow <- x[1, 2]
   	
-  	D <- abs(ann_flw[,2] - Flow)
+  	D <- abs(ann_flw[, 2] - Flow)
   	
   	# combines difference and corresponding year into one matrix
-  	Delta <- cbind(ann_flw[,1], D) 
+  	Delta <- cbind(ann_flw[, 1], D) 
   	
   	# reorders the delta matrix based on distances
-  	Delta_sort <- cbind(Delta[,1][order(Delta[,2])], sort(Delta[,2])) 
+  	Delta_sort <- cbind(Delta[, 1][order(Delta[, 2])], sort(Delta[, 2])) 
   	
   	# selects the "k-nearest-neighbors" from Delta_sort 
-  	kmatrix <- Delta_sort[1:k,1:2] 
+  	kmatrix <- Delta_sort[1:k, 1:2] 
   	
   	# defines matrix for weights
-  	weight <- matrix(nrow=k, ncol=1) 
+  	weight <- matrix(nrow = k, ncol = 1) 
    	
   	# ranks distances for purpose of generating weights	
-  	rnk <- rank(kmatrix[,2]) 
+  	rnk <- rank(kmatrix[, 2]) 
   		
   		for(i in 1:k){
   		  # fills weighting matrix
-  			weight[i,1] <- 1/(rnk[i]) 
+  			weight[i, 1] <- 1/(rnk[i]) 
   	
   		}
   
@@ -109,18 +109,18 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   	weights <- weight/z	
   	
   	# Selects a year to be "nearest neighbor"
-  	N <- sample(kmatrix[,1], 1, replace = TRUE, prob=weights) 
+  	N <- sample(kmatrix[, 1], 1, replace = TRUE, prob=weights) 
   
   	# index for selected yr
-  	pos <- N - (ann_flw[1,1] - 1) 
+  	pos <- N - (ann_flw[1, 1] - 1) 
     
   	# scaling factor to apply for disag
-  	SF <- Flow/(ann_flw[pos,2]) 
-  	temp[1, ,j] <- dat_a[pos, ,mgn] * SF	
-  	index_mat[1,j] <- N
-  	sf_mat[1,j] <- SF
-    disag[1, ,1:20,j] <- dat_a[pos, ,1:20]*SF
-  	disag[1, ,21:29,j] <- dat_a[pos, ,21:29]
+  	SF <- Flow/(ann_flw[pos, 2]) 
+  	temp[1, , j] <- dat_a[pos, , mgn] * SF	
+  	index_mat[1, j] <- N
+  	sf_mat[1, j] <- SF
+    disag[1, , 1:20, j] <- dat_a[pos, , 1:20]*SF
+  	disag[1, , 21:29, j] <- dat_a[pos, , 21:29]
   
     # now that one year has been disaggregated, the remaining years in the 
   	# trace use annual flow and also december of last yr (CY)
@@ -128,7 +128,7 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   
   		k <- sqrt(n_obs_yrs) #number of neighbors
   
-  		Flow <- x[h,(j + 1)]
+  		Flow <- x[h, 2]
   		D <- 2:n_obs_yrs
   	
   		# annual as the only selection criteria
@@ -160,39 +160,50 @@ paleo_disagg <- function(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
   		weights <- weight/z	
   		
   		# Selects a year to be "nearest neighbor"
-  		N <- sample(kmatrix[,1], 1, replace = TRUE, prob = weights) 
-  		pos <- N - (ann_flw[1,1] - 1) # index for selected yr
-  		SF <- Flow/(ann_flw[pos,2]) # scaling factor to apply for disag
-  
+  		N <- sample(kmatrix[, 1], 1, replace = TRUE, prob = weights) 
+  		pos <- N - (ann_flw[1, 1] - 1) # index for selected yr
+  		SF <- Flow/(ann_flw[pos, 2]) # scaling factor to apply for disag
+      
+  		index_mat[h, j] <- N
+  		sf_mat[h, j] <- SF
+  		
   		#disag[h, , ,j]=dat_a[pos, ,]*SF
-      disag[h, ,1:20,j]=dat_a[pos, ,1:20]*SF
-  		disag[h, ,21:29,j]=dat_a[pos, ,21:29]
+      disag[h, , 1:20, j] <- dat_a[pos, , 1:20]*SF
+  		disag[h, , 21:29, j] <- dat_a[pos, , 21:29]
   	}
   }
   			
   # output to "flat" file
   
-  disagmat=matrix(ncol=nsite, nrow=(n_paleo_yrs*12*nsim))
+  #disagmat=matrix(ncol=nsite, nrow=(n_paleo_yrs*12*nsim))
   
-  for(i in 1:nsite){
-    p <- 1
+  disag_out <- lapply(seq_len(nsim), function(ii) {
+    do.call(
+      cbind, 
+      lapply(seq_len(nsite), function(jj) as.vector(t(disag[,,jj,ii])))
+    )
+  })
   
-    for(k in 1:nsim){
-      for(j in 1:n_paleo_yrs){
-        disagmat[p:(p+11),i] <- disag[j,,i,k]
-        p <- p + 12
-      }
-    }
-  }
+  # for(i in 1:nsite){
+  #   p <- 1
+  # 
+  #   for(k in 1:nsim){
+  #     for(j in 1:n_paleo_yrs){
+  #       disagmat[p:(p+11),i] <- disag[j,,i,k]
+  #       p <- p + 12
+  #     }
+  #   }
+  # }
   
   if (!is.null(ofolder)) {
-    write.csv(
-      t(disagmat), 
-      file = file.path(ofolder, "paleo_disagg.csv"), 
-      ncol = nsite
+    lapply(seq_len(nsim), function(ii) 
+      write.csv(
+        disag_out[[ii]], 
+        file = file.path(ofolder, paste0("paleo_disagg_", ii, ".csv"))
+      )
     )
     write.csv(index_mat, file = file.path(ofolder, "index_years.csv"))
   }
 
-  invisible(list(paleo_disagg = t(disagmat), index_yrs = index_mat))
+  invisible(list(paleo_disagg = disag_out, index_yrs = index_mat))
 }
