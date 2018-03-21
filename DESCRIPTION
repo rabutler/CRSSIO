@@ -29,7 +29,7 @@ Imports:
     tools,
     utils,
     writexl,
-    xts (> 0.10),
+    xts (>= 0.10.0),
     zoo
 Remotes:
     BoulderCodeHub/CoRiverNF,
