@@ -17,9 +17,9 @@
 #' 
 #' @author Ken Nowak
 #' 
-#' @references Nowak, Kenneth, James Prairie, Balaji Rajagopalan, Upmanu Lall.
-#'   (2010) *A nonparametric stochastic approach for multisite disaggregation of
-#'   annual to daily streamflow.* Water Resources Research.
+#' @references Nowak, K., Prairie, J., Rajagopalan, B., Lall, U. (2010).
+#'   A nonparametric stochastic approach for multisite disaggregation of
+#'   annual to daily streamflow. *Water Resources Research.*
 #' 
 #' @examples 
 #' \dontrun{
@@ -34,8 +34,6 @@
 #' # observed annual flow for picking analog disag yr
 #' ann_flw <- as.matrix(read.table("tests/dp/LFWYTotal.txt"))
 #' zz <- paleo_disagg(x, ann_flw, mon_flw, 29, 1)
-#' 
-#' index_yrs <- matrix(scan("tests/dp/indexpick.txt"), ncol = 1)
 #' }
 #' 
 #' @export
