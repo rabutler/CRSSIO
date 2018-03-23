@@ -4,7 +4,8 @@
 \alias{paleo_disagg}
 \title{Spatial and temporal diaggregattion of paleo flow data}
 \usage{
-paleo_disagg(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL)
+paleo_disagg(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL,
+  index_years = NULL)
 }
 \arguments{
 \item{x}{The annual paleo data to disaagregate.}
@@ -17,6 +18,12 @@ temporaly disaggregating paleo data based on the index year.}
 \item{nsite}{The number of sites to diaggregate the data too.}
 
 \item{nsim}{Number of times to repeat the space/time disaggregation.}
+
+\item{ofolder}{Optional. If specified, the disaggregated flow data and the
+selected index years are saved to this folder as csv files.}
+
+\item{index_years}{Optional. If specified, these index years will be used
+instead of selecting years based on weights and sampling.}
 }
 \description{
 This is a direct resampling of LB tribs, i.e., no scale factor is applied to
@@ -27,22 +34,21 @@ them.
 # read in annual synthetic mon_flw for disag
 x <- matrix(scan("data-raw/Meko.txt"), ncol = 2, byrow = TRUE) 
 # intervening natural flow mon_flw - monthly CY text file
-mon_flw <- matrix(
-  scan("data-raw/CRB_CY_MON_IV_29_06_08.txt"), 
-  ncol = 29, 
-  byrow = TRUE
-)
+mon_flw <- as.matrix(read.table(
+  "tests/dp/NFfullbasinWY0608intervening.txt", 
+  sep = "\\t"
+))
 
 # observed annual flow for picking analog disag yr
-ann_flw <- matrix(scan("data-raw/LF_06_08.txt"), ncol = 2, byrow = TRUE)
+ann_flw <- as.matrix(read.table("tests/dp/LFWYTotal.txt"))
 zz <- paleo_disagg(x, ann_flw, mon_flw, 29, 1)
 }
 
 }
 \references{
-Nowak, Kenneth, James Prairie, Balaji Rajagopalan, Upmanu Lall.
-(2010) \emph{A nonparametric stochastic approach for multisite disaggregation of
-annual to daily streamflow.} Water Resources Research.
+Nowak, K., Prairie, J., Rajagopalan, B., Lall, U. (2010).
+A nonparametric stochastic approach for multisite disaggregation of
+annual to daily streamflow. \emph{Water Resources Research.}
 }
 \author{
 Ken Nowak
