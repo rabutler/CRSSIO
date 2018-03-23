@@ -2,7 +2,7 @@ context("check paleo space time disagg code")
 
 # compare to previous results ----------------------------
 
-x <- matrix(scan("../dp/Meko.txt"), ncol = 2, byrow = TRUE) 
+x <- matrix(scan("../dp/Meko.txt", quiet = TRUE), ncol = 2, byrow = TRUE) 
 # intervening natural flow mon_flw - monthly WY text file
 mon_flw <- as.matrix(read.table(
   "../dp/NFfullbasinWY0608intervening.txt", 
@@ -14,7 +14,7 @@ ann_flw <- as.matrix(read.table("../dp/LFWYTotal.txt"))
 
 zz <- as.matrix(read.table("../dp/MatrixSimDataCRBwithObsLB_DP.txt"))
  
-index_yrs <- matrix(scan("../dp/indexpick.txt"), ncol = 1)
+index_yrs <- matrix(scan("../dp/indexpick.txt", quiet = TRUE), ncol = 1)
 
 test_that("disagg matches previous code's results", {
   expect_equivalent(
@@ -22,4 +22,14 @@ test_that("disagg matches previous code's results", {
     zz,
     tolerance = 1
   )
+})
+
+# compare random selection -----------------------------
+
+orig_index <- as.matrix(read.csv("../dp/index_years_rseed408.csv"))
+dimnames(orig_index) <- NULL
+set.seed(403) # this was the first entry of .Random.seed when implementing this
+
+test_that("current random selection matches original random selection", {
+  expect_equal(paleo_disagg(x, ann_flw, mon_flw, 29, 1)$index_years, orig_index)
 })

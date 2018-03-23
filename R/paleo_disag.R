@@ -106,10 +106,14 @@ paleo_disagg <- function(x,
   # temporary matrix for storing time only disag
   temp <- array(data = NA, dim = c(n_paleo_yrs, 12, nsim)) 
   
+  # knn parameters (k) and weights
+  tmp <- knn_params(n_obs_yrs) #number of neighbors
+  k <- tmp$k
+  weights <- tmp$weights
+  
   for(j in 1:nsim){
   
-    #this picks the 1st year for disag based only on the annual flow
-  	k <- sqrt(n_obs_yrs) #number of neighbors
+    # this picks the 1st year for disag based only on the annual flow
   	
   	Flow <- x[1, 2]
   	
@@ -124,26 +128,9 @@ paleo_disagg <- function(x,
   	# selects the "k-nearest-neighbors" from Delta_sort 
   	kmatrix <- Delta_sort[1:k, 1:2] 
   	
-  	# defines matrix for weights
-  	weight <- matrix(nrow = k, ncol = 1) 
-   	
-  	# ranks distances for purpose of generating weights	
-  	rnk <- rank(kmatrix[, 2]) 
-  		
-		for(i in 1:k){
-		  # fills weighting matrix
-			weight[i, 1] <- 1/(rnk[i]) 
-	
-		}
-  
-  	z <- sum(weight) # sums weights 
-  
-  	# divides weights by sum of weights so cumulative probability = 1
-  	weights <- weight/z	
-  	
   	# Selects a year to be "nearest neighbor"
   	if (is.null(index_years)) {
-  	  N <- sample(kmatrix[, 1], 1, replace = TRUE, prob=weights) 
+  	  N <- sample(kmatrix[, 1], 1, replace = TRUE, prob = weights) 
   	} else {
   	  N <- index_years[1, j]
   	}
@@ -163,8 +150,6 @@ paleo_disagg <- function(x,
   	# trace use annual flow and also december of last yr (CY)
   	for(h in 2:n_paleo_yrs){
   
-  		k <- sqrt(n_obs_yrs) #number of neighbors
-  
   		Flow <- x[h, 2]
   		D <- 2:n_obs_yrs
   	
@@ -180,21 +165,6 @@ paleo_disagg <- function(x,
   		
   		# selects the "k-nearest-neighbors" from Delta_sort
   		kmatrix <- Delta_sort[1:k,1:2]  
-  	  weight <- matrix(nrow=k, ncol=1) # defines matrix for weights
-   		
-  	  # ranks distances for purpose of generating weights
-  		rnk <- rank(kmatrix[,2]) 
-  		
-  		for(i in 1:k){
-  	
-  			weight[i,1] <- 1/(rnk[i]) #fills weighting matrix
-  	
-  		}
-  
-  		z <- sum(weight) # sums weights 
-  	
-  		#divides weights by sum of weights so cumulative probability = 1
-  		weights <- weight/z	
   		
   		# Selects a year to be "nearest neighbor"
   		if (is.null(index_years)) {
@@ -225,12 +195,12 @@ paleo_disagg <- function(x,
   
   if (!is.null(ofolder)) {
     lapply(seq_len(nsim), function(ii) 
-      write.csv(
+      utils::write.csv(
         disag_out[[ii]], 
         file = file.path(ofolder, paste0("paleo_disagg_", ii, ".csv"))
       )
     )
-    write.csv(index_mat, file = file.path(ofolder, "index_years.csv"))
+    utils::write.csv(index_mat, file = file.path(ofolder, "index_years.csv"))
   }
 
   invisible(list(paleo_disagg = disag_out, index_years = index_mat))
