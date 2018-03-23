@@ -1,4 +1,4 @@
-context("check space time disagg code")
+context("check paleo space time disagg code")
 
 # compare to previous results ----------------------------
 
