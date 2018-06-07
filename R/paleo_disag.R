@@ -14,6 +14,9 @@
 #'   selected index years are saved to this folder as csv files.
 #' @param index_years Optional. If specified, these index years will be used 
 #'   instead of selecting years based on weights and sampling. 
+#' @param k_weights If `NULL`, parameters are set based on definitions in Nowak
+#'   et al. (2010). Users may force `k` and the `weights` by specifiying this 
+#'   argument. It should be a list with two named entries: `k` and `weights`.
 #' 
 #' @author Ken Nowak
 #' 
@@ -43,7 +46,8 @@ paleo_disagg <- function(x,
                          nsite, 
                          nsim, 
                          ofolder = NULL, 
-                         index_years = NULL)
+                         index_years = NULL,
+                         k_weights = NULL)
 {
   n_paleo_yrs <- nrow(x) # 1244 for meko; length of each simulation (yrs)
   
@@ -107,9 +111,14 @@ paleo_disagg <- function(x,
   temp <- array(data = NA, dim = c(n_paleo_yrs, 12, nsim)) 
   
   # knn parameters (k) and weights
-  tmp <- knn_params(n_obs_yrs) #number of neighbors
-  k <- tmp$k
-  weights <- tmp$weights
+  if (is.null(k_weights)) {
+    tmp <- knn_params(n_obs_yrs) #number of neighbors
+    k <- tmp$k
+    weights <- tmp$weights
+  } else {
+    k <- k_weights$k
+    weights <- k_weights$weights
+  }
   
   for(j in 1:nsim){
   

@@ -5,7 +5,7 @@
 \title{Spatial and temporal diaggregattion of paleo flow data}
 \usage{
 paleo_disagg(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL,
-  index_years = NULL)
+  index_years = NULL, k_weights = NULL)
 }
 \arguments{
 \item{x}{The annual paleo data to disaagregate.}
@@ -24,6 +24,10 @@ selected index years are saved to this folder as csv files.}
 
 \item{index_years}{Optional. If specified, these index years will be used
 instead of selecting years based on weights and sampling.}
+
+\item{k_weights}{If \code{NULL}, parameters are set based on definitions in Nowak
+et al. (2010). Users may force \code{k} and the \code{weights} by specifiying this
+argument. It should be a list with two named entries: \code{k} and \code{weights}.}
 }
 \description{
 This is a direct resampling of LB tribs, i.e., no scale factor is applied to
