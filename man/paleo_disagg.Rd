@@ -4,8 +4,8 @@
 \alias{paleo_disagg}
 \title{Spatial and temporal diaggregattion of paleo flow data}
 \usage{
-paleo_disagg(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL,
-  index_years = NULL, k_weights = NULL)
+paleo_disagg(x, ann_flw, mon_flw, nsite = 29, sf_sites = 1:20, nsim = 1,
+  ofolder = NULL, index_years = NULL, k_weights = NULL)
 }
 \arguments{
 \item{x}{The annual paleo data to disaagregate.}
@@ -16,6 +16,10 @@ paleo_disagg(x, ann_flw, mon_flw, nsite, nsim, ofolder = NULL,
 temporaly disaggregating paleo data based on the index year.}
 
 \item{nsite}{The number of sites to diaggregate the data too.}
+
+\item{sf_sites}{The site numbers (indeces), that will scale the index year's
+volume based on the annual flow being disaggregated. The remaining sites
+will select the index year directly. See \strong{Details}.}
 
 \item{nsim}{Number of times to repeat the space/time disaggregation.}
 
@@ -30,8 +34,11 @@ et al. (2010). Users may force \code{k} and the \code{weights} by specifiying th
 argument. It should be a list with two named entries: \code{k} and \code{weights}.}
 }
 \description{
-This is a direct resampling of LB tribs, i.e., no scale factor is applied to
-them.
+The default parameter values are setup to perform the typical disaggregation
+for CRSS, based on scaling the Upper Basin inflows, and performing a
+direct resampling of Lower Basin tributaries, i.e., no scale factor is
+applied to the LB tributaries. Sites 1-20 are scaled (\code{sf_sites = 1:20});
+therefore the remaining sites (21:29) are not scaled.
 }
 \examples{
 \dontrun{

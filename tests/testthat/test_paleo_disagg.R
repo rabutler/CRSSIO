@@ -16,9 +16,23 @@ zz <- as.matrix(read.table("../dp/MatrixSimDataCRBwithObsLB_DP.txt"))
  
 index_yrs <- matrix(scan("../dp/indexpick.txt", quiet = TRUE), ncol = 1)
 
+# paleo_disagg <- function(x, 
+#                          ann_flw, 
+#                          mon_flw, 
+#                          nsite = 29, 
+#                          sf_sites = 1:20,
+#                          nsim = 1,
+#                          ofolder = NULL, 
+#                          index_years = NULL,
+#                          k_weights = NULL)
+
 test_that("disagg matches previous code's results", {
   expect_equivalent(
-    paleo_disagg(x, ann_flw, mon_flw, 29, 1, index_years = index_yrs)$paleo_disagg[[1]],
+    paleo_disagg(
+      x, 
+      ann_flw = ann_flw, 
+      mon_flw = mon_flw, 
+      index_years = index_yrs)$paleo_disagg[[1]],
     zz,
     tolerance = 1
   )
@@ -31,5 +45,14 @@ dimnames(orig_index) <- NULL
 set.seed(403) # this was the first entry of .Random.seed when implementing this
 
 test_that("current random selection matches original random selection", {
-  expect_equal(paleo_disagg(x, ann_flw, mon_flw, 29, 1)$index_years, orig_index)
+  expect_equal(paleo_disagg(x, ann_flw, mon_flw)$index_years, orig_index)
 })
+
+# ***** still need to make function much safer to the format of incoming data,
+# i.e., which input need years associated with them, and which don't, matrices, 
+# vs. vectors, etc.
+# test for k = 1 and weights = 1
+# Should also consider round to nearest AF, but what are the effects of that on 
+# matching the inut Lees Ferry value
+
+# should error if index_years and k_weights are specified by user

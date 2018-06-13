@@ -1,14 +1,20 @@
 
 #' Spatial and temporal diaggregattion of paleo flow data
 #' 
-#' This is a direct resampling of LB tribs, i.e., no scale factor is applied to
-#' them.
+#' The default parameter values are setup to perform the typical disaggregation
+#' for CRSS, based on scaling the Upper Basin inflows, and performing a 
+#' direct resampling of Lower Basin tributaries, i.e., no scale factor is 
+#' applied to the LB tributaries. Sites 1-20 are scaled (`sf_sites = 1:20`); 
+#' therefore the remaining sites (21:29) are not scaled.
 #' 
 #' @param x The annual paleo data to disaagregate.
 #' @param ann_flw Observed annual flow data used for picking analog year.
 #' @param mon_flw Intervening monthly natural flow. Used for spatially and 
 #'   temporaly disaggregating paleo data based on the index year.
 #' @param nsite The number of sites to diaggregate the data too. 
+#' @param sf_sites The site numbers (indeces), that will scale the index year's
+#'   volume based on the annual flow being disaggregated. The remaining sites
+#'   will select the index year directly. See **Details**.
 #' @param nsim Number of times to repeat the space/time disaggregation.
 #' @param ofolder Optional. If specified, the disaggregated flow data and the 
 #'   selected index years are saved to this folder as csv files.
@@ -43,8 +49,9 @@
 paleo_disagg <- function(x, 
                          ann_flw, 
                          mon_flw, 
-                         nsite, 
-                         nsim, 
+                         nsite = 29, 
+                         sf_sites = 1:20,
+                         nsim = 1,
                          ofolder = NULL, 
                          index_years = NULL,
                          k_weights = NULL)
@@ -76,6 +83,26 @@ paleo_disagg <- function(x,
         "`index_years` must be specified for every year in the paleo record.",
         call. = FALSE
       )
+  }
+  
+  if (max(sf_sites) > nsite) {
+    stop(
+      "max(`sf_sites`), must be <= the number of sites (`site`).", 
+      call. = FALSE
+    )
+  }
+  
+  if (!all(1:nsite %in% sf_sites)) {
+    # set ind_sites to the remaining sites
+    # ind_sites are selected directly
+    ind_sites <- 1:nsite
+    ind_sites <- ind_sites[!(1:nsite %in% sf_sites)]
+    message(
+      "Sites ", toString(ind_sites), 
+      "\nwill be selected directly from the index years, i.e., not scaled."
+    )
+  } else {
+    ind_sites <- NULL
   }
   
   # matrix for observed values - row(yr), col (month), index (site)
@@ -135,11 +162,15 @@ paleo_disagg <- function(x,
   	Delta_sort <- cbind(Delta[, 1][order(Delta[, 2])], sort(Delta[, 2])) 
   	
   	# selects the "k-nearest-neighbors" from Delta_sort 
-  	kmatrix <- Delta_sort[1:k, 1:2] 
-  	
+  	kmatrix <- Delta_sort[1:k, 1:2, drop = FALSE] 
+
   	# Selects a year to be "nearest neighbor"
   	if (is.null(index_years)) {
-  	  N <- sample(kmatrix[, 1], 1, replace = TRUE, prob = weights) 
+  	  if (k != 1) {
+  	    N <- sample(kmatrix[, 1, drop = FALSE], 1, replace = TRUE, prob = weights)
+  	  } else {
+  	    N <- kmatrix[,1, drop = FALSE]
+  	  }
   	} else {
   	  N <- index_years[1, j]
   	}
@@ -152,8 +183,8 @@ paleo_disagg <- function(x,
   	temp[1, , j] <- dat_a[pos, , mgn] * SF	
   	index_mat[1, j] <- N
   	sf_mat[1, j] <- SF
-    disag[1, , 1:20, j] <- dat_a[pos, , 1:20]*SF
-  	disag[1, , 21:29, j] <- dat_a[pos, , 21:29]
+    disag[1, , sf_sites, j] <- dat_a[pos, , sf_sites]*SF
+  	disag[1, , ind_sites, j] <- dat_a[pos, , ind_sites]
   
     # now that one year has been disaggregated, the remaining years in the 
   	# trace use annual flow and also december of last yr (CY)
@@ -173,13 +204,17 @@ paleo_disagg <- function(x,
   		Delta_sort <- cbind(Delta[,1][order(Delta[,2])], sort(Delta[,2])) 
   		
   		# selects the "k-nearest-neighbors" from Delta_sort
-  		kmatrix <- Delta_sort[1:k,1:2]  
+  		kmatrix <- Delta_sort[1:k,1:2, drop = FALSE]  
   		
   		# Selects a year to be "nearest neighbor"
   		if (is.null(index_years)) {
-  		  N <- sample(kmatrix[, 1], 1, replace = TRUE, prob = weights) 
+  		  if (k != 1) {
+  		    N <- sample(kmatrix[, 1, drop = FALSE], 1, replace = TRUE, prob = weights)
+  		  } else {
+  		    N <- kmatrix[,1, drop = FALSE]
+  		  }
   		} else {
-  		  N <- index_years[h, j]
+  		  N <- index_years[1, j]
   		}
   		
   		pos <- N - (ann_flw[1, 1] - 1) # index for selected yr
@@ -188,8 +223,8 @@ paleo_disagg <- function(x,
   		index_mat[h, j] <- N
   		sf_mat[h, j] <- SF
   		
-      disag[h, , 1:20, j] <- dat_a[pos, , 1:20]*SF
-  		disag[h, , 21:29, j] <- dat_a[pos, , 21:29]
+      disag[h, , sf_sites, j] <- dat_a[pos, , sf_sites]*SF
+  		disag[h, , ind_sites, j] <- dat_a[pos, , ind_sites]
   	}
   }
   			
