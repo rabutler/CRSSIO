@@ -33,7 +33,7 @@ Imports:
     zoo
 Remotes:
     BoulderCodeHub/CoRiverNF,
-    rabutler/RWDataPlyr
+    BoulderCodeHub/RWDataPlyr
 Suggests:
     knitr,
     testthat
