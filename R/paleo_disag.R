@@ -63,7 +63,7 @@ paleo_disagg <- function(x,
   
   if (n_obs_yrs != nrow(ann_flw))
     stop(
-      "`ann_flw` and `mon_pttrn` must have the same number of years.", 
+      "`ann_flw` and `mon_flw` must have the same number of years.", 
       call. = FALSE
     )
   
@@ -98,8 +98,8 @@ paleo_disagg <- function(x,
     ind_sites <- 1:nsite
     ind_sites <- ind_sites[!(1:nsite %in% sf_sites)]
     message(
-      "Sites ", toString(ind_sites), 
-      "\nwill be selected directly from the index years, i.e., not scaled."
+      "Sites ", toString(ind_sites), "\n",
+      "will be selected directly from the index years, i.e., not scaled."
     )
   } else {
     ind_sites <- NULL
@@ -120,12 +120,12 @@ paleo_disagg <- function(x,
   # this loop moves observed monthly mon_flw from 2d matrix to 3d array
   mgn <- length(dat_a[1,1,])
   
-  for(j in 1:mgn){
+  for (j in seq_len(mgn)) {
   
     s <- 1
     e <- 12
 
-  	for(i in 1:n_obs_yrs){
+  	for (i in seq_len(n_obs_yrs)) {
   
   	  dat_a[i, , j] <- mon_flw[s:e, j]
   
@@ -147,84 +147,41 @@ paleo_disagg <- function(x,
     weights <- k_weights$weights
   }
   
-  for(j in 1:nsim){
+  # loop through the number of simulations ---------------------
+  for(j in seq_len(nsim)){
   
     # this picks the 1st year for disag based only on the annual flow
   	
   	Flow <- x[1, 2]
   	
-  	D <- abs(ann_flw[, 2] - Flow)
+  	# select the index year and scaling factor
+  	index_atts <- get_index_sf(Flow, ann_flw, k, weights, index_years, j, 1)
   	
-  	# combines difference and corresponding year into one matrix
-  	Delta <- cbind(ann_flw[, 1], D) 
-  	
-  	# reorders the delta matrix based on distances
-  	Delta_sort <- cbind(Delta[, 1][order(Delta[, 2])], sort(Delta[, 2])) 
-  	
-  	# selects the "k-nearest-neighbors" from Delta_sort 
-  	kmatrix <- Delta_sort[1:k, 1:2, drop = FALSE] 
-
-  	# Selects a year to be "nearest neighbor"
-  	if (is.null(index_years)) {
-  	  if (k != 1) {
-  	    N <- sample(kmatrix[, 1, drop = FALSE], 1, replace = TRUE, prob = weights)
-  	  } else {
-  	    N <- kmatrix[,1, drop = FALSE]
-  	  }
-  	} else {
-  	  N <- index_years[1, j]
-  	}
-  
-  	# index for selected yr
-  	pos <- N - (ann_flw[1, 1] - 1) 
-    
-  	# scaling factor to apply for disag
-  	SF <- Flow/(ann_flw[pos, 2]) 
-  	temp[1, , j] <- dat_a[pos, , mgn] * SF	
-  	index_mat[1, j] <- N
-  	sf_mat[1, j] <- SF
-    disag[1, , sf_sites, j] <- dat_a[pos, , sf_sites]*SF
-  	disag[1, , ind_sites, j] <- dat_a[pos, , ind_sites]
+  	temp[1, , j] <- dat_a[index_atts$pos, , mgn] * index_atts$SF	
+  	index_mat[1, j] <- index_atts$N
+  	sf_mat[1, j] <- index_atts$SF
+    disag[1, , sf_sites, j] <- dat_a[index_atts$pos, , sf_sites] * index_atts$SF
+  	disag[1, , ind_sites, j] <- dat_a[index_atts$pos, , ind_sites]
   
     # now that one year has been disaggregated, the remaining years in the 
   	# trace use annual flow and also december of last yr (CY)
+  	# *** I don't think this comment is true; not sure how it's any differnt
+  	# than the first selection 
   	for(h in 2:n_paleo_yrs){
   
   		Flow <- x[h, 2]
-  		D <- 2:n_obs_yrs
+  		# *** delete this next row? it does nothing...
+  		# D <- 2:n_obs_yrs
   	
-  		# annual as the only selection criteria
-      D <- abs(ann_flw[,2] - Flow)
+  		# select the index year and scaling factor
+  		index_atts <- get_index_sf(Flow, ann_flw, k, weights, index_years, j, h)
       
-      # combines difference and corresponding year into one matrix 
-      # these use just m.a.f
-  		Delta <- cbind(ann_flw[,1],D) 
-  
-  		# reorders the delta matrix based on distances
-  		Delta_sort <- cbind(Delta[,1][order(Delta[,2])], sort(Delta[,2])) 
+  		index_mat[h, j] <- index_atts$N
+  		sf_mat[h, j] <- index_atts$SF
   		
-  		# selects the "k-nearest-neighbors" from Delta_sort
-  		kmatrix <- Delta_sort[1:k,1:2, drop = FALSE]  
-  		
-  		# Selects a year to be "nearest neighbor"
-  		if (is.null(index_years)) {
-  		  if (k != 1) {
-  		    N <- sample(kmatrix[, 1, drop = FALSE], 1, replace = TRUE, prob = weights)
-  		  } else {
-  		    N <- kmatrix[,1, drop = FALSE]
-  		  }
-  		} else {
-  		  N <- index_years[1, j]
-  		}
-  		
-  		pos <- N - (ann_flw[1, 1] - 1) # index for selected yr
-  		SF <- Flow/(ann_flw[pos, 2]) # scaling factor to apply for disag
-      
-  		index_mat[h, j] <- N
-  		sf_mat[h, j] <- SF
-  		
-      disag[h, , sf_sites, j] <- dat_a[pos, , sf_sites]*SF
-  		disag[h, , ind_sites, j] <- dat_a[pos, , ind_sites]
+      disag[h, , sf_sites, j] <- dat_a[index_atts$pos, , sf_sites] * 
+        index_atts$SF
+  		disag[h, , ind_sites, j] <- dat_a[index_atts$pos, , ind_sites]
   	}
   }
   			
@@ -248,4 +205,41 @@ paleo_disagg <- function(x,
   }
 
   invisible(list(paleo_disagg = disag_out, index_years = index_mat))
+}
+
+
+#' @param j The simulation number
+#' 
+get_index_sf <- function(flow, ann_flw, k, weights, index_years, j, h)
+{
+  # Selects a year to be "nearest neighbor"
+  if (is.null(index_years)) {
+    
+    D <- abs(ann_flw[, 2] - flow)
+    
+    # combines difference and corresponding year into one matrix
+    Delta <- cbind(ann_flw[, 1], D) 
+    
+    # reorders the delta matrix based on distances
+    Delta_sort <- cbind(Delta[, 1][order(Delta[, 2])], sort(Delta[, 2])) 
+    
+    # selects the "k-nearest-neighbors" from Delta_sort 
+    kmatrix <- Delta_sort[1:k, 1:2, drop = FALSE] 
+    
+    if (k != 1) {
+      N <- sample(kmatrix[, 1, drop = FALSE], 1, replace = TRUE, prob = weights)
+    } else {
+      N <- kmatrix[, 1, drop = FALSE]
+    }
+  } else {
+    N <- index_years[h, j]
+  }
+  
+  # index for selected yr
+  pos <- N - (ann_flw[1, 1] - 1) 
+  
+  # scaling factor to apply for disag
+  SF <- flow/(ann_flw[pos, 2]) 
+
+  list(pos = pos, SF = SF, N = N)
 }
