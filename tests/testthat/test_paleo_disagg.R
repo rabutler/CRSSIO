@@ -12,7 +12,14 @@ mon_flw <- as.matrix(read.table(
 # observed annual flow for picking analog disag yr
 ann_flw <- as.matrix(read.table("../dp/LFWYTotal.txt"))
 
-zz <- as.matrix(read.table("../dp/MatrixSimDataCRBwithObsLB_DP.txt"))
+# ** can I check old CRSS packages to see direct paleo files when these data 
+# were used. Is the mon_flw file correct for the 1906-2008 natural flows?
+
+# ** this contains weird numbers for the Grand Canyon reach
+# zz <- as.matrix(read.table("../dp/MatrixSimDataCRBwithObsLB_DP.txt"))
+zz <- as.matrix(read.csv(
+  "../dp/MatrixSimDataCRBwithObsLB_DP_rab20180620.csv"
+))
  
 index_yrs <- matrix(scan("../dp/indexpick.txt", quiet = TRUE), ncol = 1)
 
@@ -28,14 +35,16 @@ index_yrs <- matrix(scan("../dp/indexpick.txt", quiet = TRUE), ncol = 1)
 
 test_that("disagg matches previous code's results", {
   expect_equivalent(
-    paleo_disagg(
+    tmp <- paleo_disagg(
       x, 
       ann_flw = ann_flw, 
       mon_flw = mon_flw, 
       index_years = index_yrs)$paleo_disagg[[1]],
     zz,
-    tolerance = 1
+    tolerance = 0.00001
   )
+  expect_equivalent(round(tmp, 0), round(zz, 0))
+  expect_equal(range(tmp - zz), c(0, 0))
 })
 
 # compare random selection -----------------------------
@@ -46,6 +55,8 @@ set.seed(403) # this was the first entry of .Random.seed when implementing this
 
 test_that("current random selection matches original random selection", {
   expect_equal(paleo_disagg(x, ann_flw, mon_flw)$index_years, orig_index)
+  set.seed(403)
+  expect_equal(knn_get_index(x, ann_flw), orig_index)
 })
 
 # ***** still need to make function much safer to the format of incoming data,
