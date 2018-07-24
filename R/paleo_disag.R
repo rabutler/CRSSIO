@@ -137,28 +137,21 @@ paleo_disagg <- function(x,
   # temporary matrix for storing time only disag
   temp <- array(data = NA, dim = c(n_paleo_yrs, 12, nsim)) 
   
-  # knn parameters (k) and weights
-  if (is.null(k_weights)) {
-    tmp <- knn_params(n_obs_yrs) #number of neighbors
-    k <- tmp$k
-    weights <- tmp$weights
-  } else {
-    k <- k_weights$k
-    weights <- k_weights$weights
-  }
-  
   # loop through the number of simulations ---------------------
   for(j in seq_len(nsim)){
   
     # this picks the 1st year for disag based only on the annual flow
   	
-  	Flow <- x[1, 2]
-  	
-  	# select the index year and scaling factor
-  	index_atts <- get_index_sf(Flow, ann_flw, k, weights, index_years, j, 1)
+  	if (is.null(index_years)) {
+  	  index_years <- knn_get_index_year(x, ann_flw[, c(1, j + 1)], k_weights)
+  	  index_mat[, j] <- index_years[, 1]
+  	}
+    
+    # get the scaling factor
+    index_atts <- get_scale_factor(index_years[1, 1], x[1, 2], ann_flw)
   	
   	temp[1, , j] <- dat_a[index_atts$pos, , mgn] * index_atts$SF	
-  	index_mat[1, j] <- index_atts$N
+  	
   	sf_mat[1, j] <- index_atts$SF
     disag[1, , sf_sites, j] <- dat_a[index_atts$pos, , sf_sites] * index_atts$SF
   	disag[1, , ind_sites, j] <- dat_a[index_atts$pos, , ind_sites]
@@ -174,9 +167,8 @@ paleo_disagg <- function(x,
   		# D <- 2:n_obs_yrs
   	
   		# select the index year and scaling factor
-  		index_atts <- get_index_sf(Flow, ann_flw, k, weights, index_years, j, h)
-      
-  		index_mat[h, j] <- index_atts$N
+  		index_atts <- get_scale_factor(index_years[h, 1], x[h, 2], ann_flw)
+  		
   		sf_mat[h, j] <- index_atts$SF
   		
       disag[h, , sf_sites, j] <- dat_a[index_atts$pos, , sf_sites] * 
@@ -207,39 +199,22 @@ paleo_disagg <- function(x,
   invisible(list(paleo_disagg = disag_out, index_years = index_mat))
 }
 
-
-#' @param j The simulation number
+#' Compute the scaling factor for the current year's flow from the index year
 #' 
-get_index_sf <- function(flow, ann_flw, k, weights, index_years, j, h)
+#' @param index_year The index year to select
+#' @param flow The current flow to disaggregate (length == 1)
+#' @param ann_index_flow Matrix of index years and flow. n x 2 matrix. First 
+#'   column is years.
+#'
+#' @noRd
+#' 
+get_scale_factor <- function(index_year, flow, ann_index_flow)
 {
-  # Selects a year to be "nearest neighbor"
-  if (is.null(index_years)) {
-    
-    D <- abs(ann_flw[, 2] - flow)
-    
-    # combines difference and corresponding year into one matrix
-    Delta <- cbind(ann_flw[, 1], D) 
-    
-    # reorders the delta matrix based on distances
-    Delta_sort <- cbind(Delta[, 1][order(Delta[, 2])], sort(Delta[, 2])) 
-    
-    # selects the "k-nearest-neighbors" from Delta_sort 
-    kmatrix <- Delta_sort[1:k, 1:2, drop = FALSE] 
-    
-    if (k != 1) {
-      N <- sample(kmatrix[, 1, drop = FALSE], 1, replace = TRUE, prob = weights)
-    } else {
-      N <- kmatrix[, 1, drop = FALSE]
-    }
-  } else {
-    N <- index_years[h, j]
-  }
-  
   # index for selected yr
-  pos <- N - (ann_flw[1, 1] - 1) 
-  
+  pos <- match(index_year, ann_index_flow[,1])
+ 
   # scaling factor to apply for disag
-  SF <- flow/(ann_flw[pos, 2]) 
+  SF <- flow/(ann_index_flow[pos, 2]) 
 
-  list(pos = pos, SF = SF, N = N)
+  list(pos = pos, SF = SF)
 }

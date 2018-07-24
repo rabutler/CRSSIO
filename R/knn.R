@@ -15,23 +15,27 @@
 #' @param k_weights If `NULL`, parameters are set based on definitions in Nowak
 #'   et al. (2010). Users may force `k` and the `weights` by specifiying this 
 #'   argument. It should be a list with two named entries: `k` and `weights`.
+#'   `k` should be a single integer specifying the number of neightbors to 
+#'   select from. `weights` should be a vector with length equal to `k`, 
+#'   specifying the weights to apply to the 1-`k` neighbors for selecting the 
+#'   neighbor.
 #'   
-#' @return Index years with the same length as the number of columns in 
-#'   `ann_flow`.
+#' @return N x 1 matrix of index years, with the number of rows, equal to the 
+#'   number of rows in `ann_flow`.
 #'   
 #' @examples 
 #' # a sample of three years of flow data
 #' flow_mat <- cbind(c(2000, 2001, 2002), c(1400, 1567, 1325))
 #' # made up historical data to use as index years
 #' ind_flow <- cbind(1901:1980, rnorm(80, mean = 1500, sd = 300))
-#' knn_get_index(flow_mat, ind_flow)
+#' knn_get_index_year(flow_mat, ind_flow)
 #' 
 #' @references Nowak, K., Prairie, J., Rajagopalan, B., Lall, U. (2010).
 #'   A nonparametric stochastic approach for multisite disaggregation of
 #'   annual to daily streamflow. *Water Resources Research.*
 #'
 #' @export
-knn_get_index <- function(ann_flow, ann_index_flow, k_weights = NULL)
+knn_get_index_year <- function(ann_flow, ann_index_flow, k_weights = NULL)
 {
   # check inputs -------------------
   if (!is.matrix(ann_flow) || ncol(ann_flow) != 2)

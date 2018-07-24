@@ -56,7 +56,7 @@ set.seed(403) # this was the first entry of .Random.seed when implementing this
 test_that("current random selection matches original random selection", {
   expect_equal(paleo_disagg(x, ann_flw, mon_flw)$index_years, orig_index)
   set.seed(403)
-  expect_equal(knn_get_index(x, ann_flw), orig_index)
+  expect_equal(knn_get_index_year(x, ann_flw), orig_index)
 })
 
 # ***** still need to make function much safer to the format of incoming data,
