@@ -2,6 +2,14 @@ context("check paleo space time disagg code")
 
 # compare to previous results ----------------------------
 
+tmpDir <- "../dp/tmp"
+
+dir.create(tmpDir)
+teardown(unlink(tmpDir, recursive = T))
+
+# unzip the example nc file
+unzip(file.path("../dp", "dp_to_compare.zip"), exdir = tmpDir)
+
 x <- matrix(scan("../dp/Meko.txt", quiet = TRUE), ncol = 2, byrow = TRUE) 
 # intervening natural flow mon_flw - monthly WY text file
 mon_flw <- as.matrix(read.table(
@@ -18,7 +26,7 @@ ann_flw <- as.matrix(read.table("../dp/LFWYTotal.txt"))
 # ** this contains weird numbers for the Grand Canyon reach
 # zz <- as.matrix(read.table("../dp/MatrixSimDataCRBwithObsLB_DP.txt"))
 zz <- as.matrix(read.csv(
-  "../dp/MatrixSimDataCRBwithObsLB_DP_rab20180620.csv"
+  file.path(tmpDir, "MatrixSimDataCRBwithObsLB_DP_rab20180620.csv")
 ))
  
 index_yrs <- matrix(scan("../dp/indexpick.txt", quiet = TRUE), ncol = 1)
