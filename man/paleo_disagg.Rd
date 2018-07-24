@@ -24,7 +24,10 @@ will select the index year directly. See \strong{Details}.}
 \item{nsim}{Number of times to repeat the space/time disaggregation.}
 
 \item{ofolder}{Optional. If specified, the disaggregated flow data and the
-selected index years are saved to this folder as csv files.}
+selected index years are saved to this folder as csv files. There will be
+one csv file for each time the disaggregation is repeated (\code{nsim}). This
+file will contain one column for each site (\code{nsite}), and one row for each
+month of data (12 * number of years in \code{x}).}
 
 \item{index_years}{Optional. If specified, these index years will be used
 instead of selecting years based on weights and sampling.}

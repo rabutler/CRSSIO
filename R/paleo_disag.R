@@ -17,7 +17,10 @@
 #'   will select the index year directly. See **Details**.
 #' @param nsim Number of times to repeat the space/time disaggregation.
 #' @param ofolder Optional. If specified, the disaggregated flow data and the 
-#'   selected index years are saved to this folder as csv files.
+#'   selected index years are saved to this folder as csv files. There will be 
+#'   one csv file for each time the disaggregation is repeated (`nsim`). This
+#'   file will contain one column for each site (`nsite`), and one row for each
+#'   month of data (12 * number of years in `x`). 
 #' @param index_years Optional. If specified, these index years will be used 
 #'   instead of selecting years based on weights and sampling. 
 #' @param k_weights If `NULL`, parameters are set based on definitions in Nowak
@@ -134,9 +137,6 @@ paleo_disagg <- function(x,
   	}
   }
   
-  # temporary matrix for storing time only disag
-  temp <- array(data = NA, dim = c(n_paleo_yrs, 12, nsim)) 
-  
   # loop through the number of simulations ---------------------
   for(j in seq_len(nsim)){
   
@@ -147,24 +147,8 @@ paleo_disagg <- function(x,
   	  index_mat[, j] <- index_years[, 1]
   	}
     
-    # get the scaling factor
-    index_atts <- get_scale_factor(index_years[1, 1], x[1, 2], ann_flw)
-  	
-  	temp[1, , j] <- dat_a[index_atts$pos, , mgn] * index_atts$SF	
-  	
-  	sf_mat[1, j] <- index_atts$SF
-    disag[1, , sf_sites, j] <- dat_a[index_atts$pos, , sf_sites] * index_atts$SF
-  	disag[1, , ind_sites, j] <- dat_a[index_atts$pos, , ind_sites]
-  
-    # now that one year has been disaggregated, the remaining years in the 
-  	# trace use annual flow and also december of last yr (CY)
-  	# *** I don't think this comment is true; not sure how it's any differnt
-  	# than the first selection 
-  	for(h in 2:n_paleo_yrs){
-  
-  		Flow <- x[h, 2]
-  		# *** delete this next row? it does nothing...
-  		# D <- 2:n_obs_yrs
+    # loop through all years that need disaggregated ---------------
+  	for(h in seq_len(n_paleo_yrs)) {
   	
   		# select the index year and scaling factor
   		index_atts <- get_scale_factor(index_years[h, 1], x[h, 2], ann_flw)
@@ -177,8 +161,8 @@ paleo_disagg <- function(x,
   	}
   }
   			
-  # output to "flat" file
   
+  # convert from 4-d array to list of 2-d arrays
   disag_out <- lapply(seq_len(nsim), function(ii) {
     do.call(
       cbind, 
@@ -186,14 +170,10 @@ paleo_disagg <- function(x,
     )
   })
   
+  # output to "flat" file
+  
   if (!is.null(ofolder)) {
-    lapply(seq_len(nsim), function(ii) 
-      utils::write.csv(
-        disag_out[[ii]], 
-        file = file.path(ofolder, paste0("paleo_disagg_", ii, ".csv"))
-      )
-    )
-    utils::write.csv(index_mat, file = file.path(ofolder, "index_years.csv"))
+    write_knn_disagg(disag_out, index_mat, ofolder = ofolder)
   }
 
   invisible(list(paleo_disagg = disag_out, index_years = index_mat))
@@ -201,7 +181,10 @@ paleo_disagg <- function(x,
 
 #' Compute the scaling factor for the current year's flow from the index year
 #' 
-#' @param index_year The index year to select
+#' Selects the magnitude of flow from `ann_index_flow` for the `index_year`. 
+#' Then scaling factor is computed as `flow` / `ann_index_flow[index_year]`.
+#' 
+#' @param index_year The index year to select from ann_index_flow
 #' @param flow The current flow to disaggregate (length == 1)
 #' @param ann_index_flow Matrix of index years and flow. n x 2 matrix. First 
 #'   column is years.
@@ -217,4 +200,17 @@ get_scale_factor <- function(index_year, flow, ann_index_flow)
   SF <- flow/(ann_index_flow[pos, 2]) 
 
   list(pos = pos, SF = SF)
+}
+
+write_knn_disagg <- function(disag_out, index_mat, ofolder = ".")
+{
+  nsim <- length(disag_out)
+  
+  lapply(seq_len(nsim), function(ii) 
+    utils::write.csv(
+      disag_out[[ii]], 
+      file = file.path(ofolder, paste0("paleo_disagg_", ii, ".csv"))
+    )
+  )
+  utils::write.csv(index_mat, file = file.path(ofolder, "index_years.csv"))
 }
