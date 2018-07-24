@@ -193,6 +193,11 @@ paleo_disagg <- function(x,
 #' 
 get_scale_factor <- function(index_year, flow, ann_index_flow)
 {
+  stopifnot(length(index_year) == 1)
+  stopifnot(length(flow) == 1)
+  stopifnot(ncol(ann_index_flow) == 2)
+  stopifnot(index_year %in% ann_index_flow[,1])
+  
   # index for selected yr
   pos <- match(index_year, ann_index_flow[,1])
  

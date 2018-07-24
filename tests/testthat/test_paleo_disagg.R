@@ -67,6 +67,33 @@ test_that("current random selection matches original random selection", {
   expect_equal(knn_get_index_year(x, ann_flw), orig_index)
 })
 
+# check get_scale_factor() -----------------------------
+
+context("`CRSSIO:::get_scale_factor()`")
+
+index_flow <- cbind(2000:2002, c(1000, 1100, 900))
+
+test_that("`get_scale_factor()` errors correctly", {
+  expect_error(CRSSIO:::get_scale_factor(2000, c(1000,2000), index_flow))
+  expect_error(CRSSIO:::get_scale_factor(2000:2001, 1000, index_flow))
+  expect_error(CRSSIO:::get_scale_factor(2000, 950, 2000:2002))
+  expect_error(CRSSIO:::get_scale_factor(1999, 950, index_flow))
+})
+
+test_that("`get_scale_factor()` returns correctly", {
+  expect_type(tmp <- CRSSIO:::get_scale_factor(2000, 950, index_flow), "list")
+  expect_identical(tmp, list(pos = as.integer(1), SF = 950/1000))
+  expect_identical(
+    CRSSIO:::get_scale_factor(2002, 950, index_flow), 
+    list(pos = as.integer(3), SF = 950/900)
+  )
+  expect_identical(
+    CRSSIO:::get_scale_factor(2001, 1100, index_flow), 
+    list(pos = as.integer(2), SF = 1100/1100)
+  )
+})
+
+
 # ***** still need to make function much safer to the format of incoming data,
 # i.e., which input need years associated with them, and which don't, matrices, 
 # vs. vectors, etc.
