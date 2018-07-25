@@ -2,3 +2,5 @@
 .Rhistory
 .RData
 tmp.feather
+tests/dp/MatrixSimDataCRBwithObsLB_DP.txt
+tests/dp/MatrixSimDataCRBwithObsLB_DP_rab20180620.csv
