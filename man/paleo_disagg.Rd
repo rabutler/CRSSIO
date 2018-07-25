@@ -4,13 +4,13 @@
 \alias{paleo_disagg}
 \title{Spatial and temporal diaggregattion of paleo flow data}
 \usage{
-paleo_disagg(x, ann_flw, mon_flw, nsite = 29, sf_sites = 1:20, nsim = 1,
-  ofolder = NULL, index_years = NULL, k_weights = NULL)
+paleo_disagg(x, ann_index_flow, mon_flw, nsite = 29, sf_sites = 1:20,
+  nsim = 1, ofolder = NULL, index_years = NULL, k_weights = NULL)
 }
 \arguments{
 \item{x}{The annual paleo data to disaagregate.}
 
-\item{ann_flw}{Observed annual flow data used for picking analog year.}
+\item{ann_index_flow}{Observed annual flow data used for picking index year.}
 
 \item{mon_flw}{Intervening monthly natural flow. Used for spatially and
 temporaly disaggregating paleo data based on the index year.}
@@ -54,8 +54,8 @@ mon_flw <- as.matrix(read.table(
 ))
 
 # observed annual flow for picking analog disag yr
-ann_flw <- as.matrix(read.table("tests/dp/LFWYTotal.txt"))
-zz <- paleo_disagg(x, ann_flw, mon_flw, 29, 1)
+ann_index_flow <- as.matrix(read.table("tests/dp/LFWYTotal.txt"))
+zz <- paleo_disagg(x, ann_index_flow, mon_flw, 29, 1)
 }
 
 }

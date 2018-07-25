@@ -38,8 +38,10 @@
 knn_get_index_year <- function(ann_flow, ann_index_flow, k_weights = NULL)
 {
   # check inputs -------------------
-  if (!is.matrix(ann_flow) || ncol(ann_flow) != 2)
-    stop("`ann_flow` should be a 2-column matrix", call. = FALSE)
+  assert_that(
+    is.matrix(ann_flow) && ncol(ann_flow) == 2, 
+    msg = "`ann_flow` should be a 2-column matrix"
+  )
   
   if (!is.matrix(ann_index_flow) || ncol(ann_index_flow) != 2)
     stop("`ann_index_flow` should be a 2-column matrix", call. = FALSE)
@@ -125,7 +127,7 @@ knn_get_nn <- function(ann_flow, ann_index_flow, k, w)
       prob = w
     )
   } else {
-    ind_year <- kmatrix[1, 1, drop = FALSE]
+    ind_year <- delta_sort[1, 1, drop = FALSE]
   }
   
   ind_year

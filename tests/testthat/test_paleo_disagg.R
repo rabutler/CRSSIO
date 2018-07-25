@@ -45,7 +45,7 @@ test_that("disagg matches previous code's results", {
   expect_equivalent(
     tmp <- paleo_disagg(
       x, 
-      ann_flw = ann_flw, 
+      ann_index_flow = ann_flw, 
       mon_flw = mon_flw, 
       index_years = index_yrs)$paleo_disagg[[1]],
     zz,
@@ -66,6 +66,54 @@ test_that("current random selection matches original random selection", {
   set.seed(403)
   expect_equal(knn_get_index_year(x, ann_flw), orig_index)
 })
+
+# check paleo_disagg errros -----------------------------
+test_that("`paleo_disagg()` errors correctly", {
+  expect_error(
+    paleo_disagg(
+      x, 
+      ann_flw, 
+      mon_flw, 
+      index_years = orig_index, 
+      k_weights = list(k = 1, weights = 1)
+    ),
+    "If specifying `index_years`, there is no need to specify `k_weights`",
+    fixed = TRUE
+  )
+  expect_error(paleo_disagg(x[,1], ann_flw, mon_flw))
+  expect_error(paleo_disagg(x, ann_flw[,2], mon_flw))
+  expect_error(
+    paleo_disagg(x, ann_flw, mon_flw[1:60,]),
+    "`ann_index_flow` and `mon_flw` must have the same number of years.",
+    fixed = TRUE
+  )
+  expect_error(
+    paleo_disagg(x, ann_flw[1:60,], mon_flw),
+    "`ann_index_flow` and `mon_flw` must have the same number of years.",
+    fixed = TRUE
+  )
+  expect_error(
+    paleo_disagg(x, ann_flw, mon_flw[1:143,]),
+    "`mon_flw` needs to have an even year's worth of data",
+    fixed = TRUE
+  )
+  expect_error(
+    paleo_disagg(x, ann_flw, mon_flw[, 1:28]),
+    "`mon_flow` needs to have `nsite` columns.",
+    fixed = TRUE
+  )
+  expect_error(
+    paleo_disagg(x, ann_flw, mon_flw, nsite = 30),
+    "`mon_flow` needs to have `nsite` columns.",
+    fixed = TRUE
+  )
+  expect_error(
+    paleo_disagg(x, ann_flw, mon_flw, nsite = 20),
+    "`mon_flow` needs to have `nsite` columns.",
+    fixed = TRUE
+  )
+})
+
 
 # check get_scale_factor() -----------------------------
 
@@ -97,8 +145,18 @@ test_that("`get_scale_factor()` returns correctly", {
 # ***** still need to make function much safer to the format of incoming data,
 # i.e., which input need years associated with them, and which don't, matrices, 
 # vs. vectors, etc.
-# test for k = 1 and weights = 1
+
 # Should also consider round to nearest AF, but what are the effects of that on 
 # matching the inut Lees Ferry value
 
+# should check that multiple simulations work; also need to check that multiple
+# simulations when specifying index_years works
+
+# should check that the mon_flow is either specified on water year vs. cy, or 
+# somehow check that
+# - not sure if I can; might be up to the user
+
 # should error if index_years and k_weights are specified by user
+
+# need to check that the monthly data for all gages sums to the annual data for 
+# the flow to disaggregate, but must check the appropriate gage.

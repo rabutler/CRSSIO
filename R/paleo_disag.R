@@ -8,7 +8,7 @@
 #' therefore the remaining sites (21:29) are not scaled.
 #' 
 #' @param x The annual paleo data to disaagregate.
-#' @param ann_flw Observed annual flow data used for picking analog year.
+#' @param ann_index_flow Observed annual flow data used for picking index year.
 #' @param mon_flw Intervening monthly natural flow. Used for spatially and 
 #'   temporaly disaggregating paleo data based on the index year.
 #' @param nsite The number of sites to diaggregate the data too. 
@@ -44,13 +44,13 @@
 #' ))
 #' 
 #' # observed annual flow for picking analog disag yr
-#' ann_flw <- as.matrix(read.table("tests/dp/LFWYTotal.txt"))
-#' zz <- paleo_disagg(x, ann_flw, mon_flw, 29, 1)
+#' ann_index_flow <- as.matrix(read.table("tests/dp/LFWYTotal.txt"))
+#' zz <- paleo_disagg(x, ann_index_flow, mon_flw, 29, 1)
 #' }
 #' 
 #' @export
 paleo_disagg <- function(x, 
-                         ann_flw, 
+                         ann_index_flow, 
                          mon_flw, 
                          nsite = 29, 
                          sf_sites = 1:20,
@@ -62,16 +62,25 @@ paleo_disagg <- function(x,
   n_paleo_yrs <- nrow(x) # 1244 for meko; length of each simulation (yrs)
   
   # how many yrs of observed mon_flw
+  assert_that(
+    nrow(mon_flw) %% 12 == 0, 
+    msg = "`mon_flw` needs to have an even year's worth of data"
+  )
+  
   n_obs_yrs <- nrow(mon_flw)/12 
   
-  if (n_obs_yrs != nrow(ann_flw))
-    stop(
-      "`ann_flw` and `mon_flw` must have the same number of years.", 
-      call. = FALSE
-    )
+  assert_that(
+    n_obs_yrs == nrow(ann_index_flow),
+    msg = "`ann_index_flow` and `mon_flw` must have the same number of years."
+  )
   
-  if (nsite != ncol(mon_flw))
-    stop("`mon_flow` needs to have `nsite` columns.", call. = FALSE)
+  assert_that(ncol(ann_index_flow) == 2)
+  assert_that(ncol(x) == 2)
+  
+  assert_that(
+    nsite == ncol(mon_flw), 
+    msg = "`mon_flow` needs to have `nsite` columns."
+  )
   
   if (!is.null(index_years)) {
     if (ncol(index_years) != nsim) 
@@ -86,6 +95,13 @@ paleo_disagg <- function(x,
         "`index_years` must be specified for every year in the paleo record.",
         call. = FALSE
       )
+  }
+  
+  if (!is.null(index_years) && !is.null(k_weights)) {
+    stop(
+      "If specifying `index_years`, there is no need to specify `k_weights`", 
+      call. = FALSE
+    )
   }
   
   if (max(sf_sites) > nsite) {
@@ -141,17 +157,20 @@ paleo_disagg <- function(x,
   for(j in seq_len(nsim)){
   
     # this picks the 1st year for disag based only on the annual flow
-  	
+
   	if (is.null(index_years)) {
-  	  index_years <- knn_get_index_year(x, ann_flw[, c(1, j + 1)], k_weights)
-  	  index_mat[, j] <- index_years[, 1]
+  	  ind_yrs <- knn_get_index_year(x, ann_index_flow, k_weights)
+  	  index_mat[, j] <- ind_yrs[, 1]
+  	} else {
+  	  ind_yrs <- index_years[, j, drop = FALSE]
+  	  index_mat[, j] <- ind_yrs[, 1]
   	}
     
     # loop through all years that need disaggregated ---------------
   	for(h in seq_len(n_paleo_yrs)) {
   	
   		# select the index year and scaling factor
-  		index_atts <- get_scale_factor(index_years[h, 1], x[h, 2], ann_flw)
+  		index_atts <- get_scale_factor(ind_yrs[h, 1], x[h, 2], ann_index_flow)
   		
   		sf_mat[h, j] <- index_atts$SF
   		
@@ -193,10 +212,10 @@ paleo_disagg <- function(x,
 #' 
 get_scale_factor <- function(index_year, flow, ann_index_flow)
 {
-  stopifnot(length(index_year) == 1)
-  stopifnot(length(flow) == 1)
-  stopifnot(ncol(ann_index_flow) == 2)
-  stopifnot(index_year %in% ann_index_flow[,1])
+  assert_that(length(index_year) == 1)
+  assert_that(length(flow) == 1)
+  assert_that(ncol(ann_index_flow) == 2)
+  assert_that(index_year %in% ann_index_flow[,1])
   
   # index for selected yr
   pos <- match(index_year, ann_index_flow[,1])
@@ -214,8 +233,13 @@ write_knn_disagg <- function(disag_out, index_mat, ofolder = ".")
   lapply(seq_len(nsim), function(ii) 
     utils::write.csv(
       disag_out[[ii]], 
-      file = file.path(ofolder, paste0("paleo_disagg_", ii, ".csv"))
+      file = file.path(ofolder, paste0("paleo_disagg_", ii, ".csv")),
+      row.names = FALSE
     )
   )
-  utils::write.csv(index_mat, file = file.path(ofolder, "index_years.csv"))
+  utils::write.csv(
+    index_mat, 
+    file = file.path(ofolder, "index_years.csv"), 
+    row.names = FALSE
+  )
 }

@@ -110,5 +110,24 @@ test_that("knn_get_index_year returns correct structure", {
   expect_true(is.matrix(tmp))
   expect_equal(dim(tmp), c(3, 1))
   expect_true(all(tmp %in% ind_flow[, 1]))
+  
+  # check k = 1, and weights = 1
+  expect_type(
+    tmp <- knn_get_index_year(
+      flow_mat, 
+      ind_flow, 
+      list(k = 1, weights = 1)
+    ), 
+    "double"
+  )
+  expect_true(is.matrix(tmp))
+  expect_equal(dim(tmp), c(3, 1))
+  expect_true(all(tmp %in% ind_flow[, 1]))
+  for(i in seq_len(nrow(flow_mat))) {
+    expect_identical(
+      tmp[i],
+      ind_flow[which.min(abs(flow_mat[i, 2] - ind_flow[, 2])), 1]
+    )
+  }
 })
 
