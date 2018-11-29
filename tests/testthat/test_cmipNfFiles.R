@@ -6,7 +6,7 @@ context('Check that CMIP natural flow files are created correctly')
 cmipDir <- "../cmip5/tmp"
 
 dir.create(cmipDir)
-on.exit(unlink(cmipDir, recursive = T))
+on.exit(unlink(cmipDir, recursive = TRUE))
 
 # unzip the example nc file
 ncPath <- "../cmip5"
